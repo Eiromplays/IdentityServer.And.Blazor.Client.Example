@@ -10,6 +10,10 @@ public class IdentityController : ControllerBase
     [HttpGet]
     public IActionResult Get()
     {
-        return new JsonResult(from c in User.Claims select new { c.Type, c.Value });
+        var response = new JsonResult(from c in User.Claims select new { c.Type, c.Value });
+
+        Console.WriteLine($"Response {response.Value}");
+        
+        return response;
     }
 }

@@ -1,8 +1,6 @@
 // Copyright (c) Duende Software. All rights reserved.
 // See LICENSE in the project root for license information.
 
-using Microsoft.IdentityModel.Tokens;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -26,6 +24,12 @@ builder.Services.AddAuthorization(options =>
 );
 
 var app = builder.Build();
+
+app.UseCors(corsPolicyBuilder =>
+    corsPolicyBuilder.WithOrigins("https://localhost:7189")
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials());
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

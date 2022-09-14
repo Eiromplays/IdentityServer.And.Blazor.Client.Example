@@ -1,3 +1,6 @@
+using Duende.Bff;
+using Duende.Bff.Yarp;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -5,7 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
-builder.Services.AddBff();
+builder.Services.AddBff()
+    .AddRemoteApis();
 
 builder.Services.AddAuthentication(options =>
     {
@@ -64,7 +68,9 @@ app.UseBff();
 app.UseAuthorization();
 
 app.MapBffManagementEndpoints();
-
+app.MapRemoteBffApiEndpoint(
+    "/api/identity", "https://localhost:6001/identity")
+    .RequireAccessToken();
 
 app.MapRazorPages();
 
