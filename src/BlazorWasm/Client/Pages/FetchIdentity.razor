@@ -1,0 +1,38 @@
+﻿@page "/identity"
+@inject HttpClient Http
+
+<PageTitle>Identity</PageTitle>
+
+<h1>Identity</h1>
+
+<p>This component demonstrates fetching data from external API.</p>
+
+@if (identity is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Temp. (C)</th>
+                <th>Temp. (F)</th>
+                <th>Summary</th>
+            </tr>
+        </thead>
+        <tbody>
+            @identity
+        </tbody>
+    </table>
+}
+
+@code {
+    private object? identity;
+
+    protected override async Task OnInitializedAsync()
+    {
+        identity = await Http.GetFromJsonAsync<object>("https://localhost:6001/identity");
+    }
+}
