@@ -1,6 +1,4 @@
-using System;
-
-namespace IdentityServerHost.Pages.Login;
+namespace IdentityServerAspNetIdentity.Pages.Account.Login;
 
 public class LoginOptions
 {

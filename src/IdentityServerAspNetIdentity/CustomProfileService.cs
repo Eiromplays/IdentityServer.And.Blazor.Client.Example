@@ -1,8 +1,8 @@
 ﻿using Duende.IdentityServer.AspNetIdentity;
 using Duende.IdentityServer.Models;
-using IdentityServerHost.Models;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
+using IdentityServerAspNetIdentity.Models;
 
 namespace IdentityServerAspNetIdentity
 {

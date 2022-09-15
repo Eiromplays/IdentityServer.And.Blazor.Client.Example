@@ -1,48 +1,82 @@
-// Copyright (c) Duende Software. All rights reserved.
-// See LICENSE in the project root for license information.
+using Duende.Bff.Yarp;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddControllersWithViews();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddAuthentication("Bearer")
-    .AddJwtBearer(options =>
+
+builder.Services.AddRazorPages();
+
+builder.Services.AddBff()
+    .AddRemoteApis();
+
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultScheme = "cookie";
+        options.DefaultChallengeScheme = "oidc";
+        options.DefaultSignOutScheme = "oidc";
+    })
+    .AddCookie("cookie", options =>
+    {
+        options.Cookie.Name = "__Host-blazor";
+        options.Cookie.SameSite = SameSiteMode.Strict;
+    })
+    .AddOpenIdConnect("oidc", options =>
     {
         options.Authority = "https://localhost:5001";
-        options.TokenValidationParameters.ValidateAudience = false;
+
+        options.ClientId = "blazor-client";
+        options.ClientSecret = "secret";
+        options.ResponseType = "code";
+        options.ResponseMode = "query";
+
+        options.Scope.Clear();
+        options.Scope.Add("openid");
+        options.Scope.Add("profile");
+        options.Scope.Add("api");
+        options.Scope.Add("offline_access");
+
+        options.MapInboundClaims = false;
+        options.GetClaimsFromUserInfoEndpoint = true;
+        options.SaveTokens = true;
     });
-builder.Services.AddAuthorization(options =>
-    options.AddPolicy("ApiScope", policy =>
-    {
-        policy.RequireAuthenticatedUser();
-        policy.RequireClaim("scope", "api");
-    })
-);
 
 var app = builder.Build();
-
-app.UseCors(corsPolicyBuilder =>
-    corsPolicyBuilder.WithOrigins("https://localhost:7189")
-        .AllowAnyHeader()
-        .AllowAnyMethod()
-        .AllowCredentials());
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseWebAssemblyDebugging();
+}
+else
+{
+    app.UseExceptionHandler("/Error");
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHsts();
 }
 
 app.UseHttpsRedirection();
 
+app.UseBlazorFrameworkFiles();
+app.UseStaticFiles();
+
+app.UseRouting();
+
 app.UseAuthentication();
+app.UseBff();
 app.UseAuthorization();
 
-app.MapControllers().RequireAuthorization("ApiScope");
+app.MapBffManagementEndpoints();
+
+app.MapRazorPages();
+
+app.MapControllers()
+    .RequireAuthorization()
+    .AsBffApiEndpoint();
+
+app.MapFallbackToFile("index.html");
 
 app.Run();

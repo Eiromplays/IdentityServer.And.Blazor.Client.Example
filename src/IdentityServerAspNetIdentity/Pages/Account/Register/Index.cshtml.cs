@@ -1,3 +1,4 @@
+using System.Text.Encodings.Web;
 using Duende.IdentityServer.Events;
 using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
@@ -9,7 +10,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace IdentityServerAspNetIdentity.Pages.Account.Login;
+namespace IdentityServerAspNetIdentity.Pages.Account.Register;
 
 [SecurityHeaders]
 [AllowAnonymous]
@@ -50,7 +51,7 @@ public class Index : PageModel
     {
         await BuildModelAsync(returnUrl);
             
-        if (View.IsExternalLoginOnly)
+        if (View.IsExternalAccountOnly)
         {
             // we only have one option for logging in and it's an external provider
             return RedirectToPage("/ExternalLogin/Challenge", new { scheme = View.ExternalLoginScheme, returnUrl });
@@ -61,96 +62,51 @@ public class Index : PageModel
         
     public async Task<IActionResult> OnPost()
     {
-        // check if we are in the context of an authorization request
-        var context = await _interaction.GetAuthorizationContextAsync(Input.ReturnUrl);
-
-        // the user clicked the "cancel" button
-        if (Input.Button != "login")
+        if (!ModelState.IsValid)
         {
-            if (context != null)
+            await BuildModelAsync(Input.ReturnUrl);
+            return Page();
+        }
+        
+        var user = new ApplicationUser { UserName = Input.Username, Email = Input.Email };
+        
+        var result = await _userManager.CreateAsync(user, Input.Password);
+        
+        if (result.Succeeded)
+        {
+            if (!_signInManager.Options.SignIn.RequireConfirmedEmail)
             {
-                // if the user cancels, send a result back into IdentityServer as if they 
-                // denied the consent (even if this client does not require consent).
-                // this will send back an access denied OIDC error response to the client.
-                await _interaction.DenyAuthorizationAsync(context, AuthorizationError.AccessDenied);
+                await _signInManager.SignInAsync(user, isPersistent: false);
 
-                // we can trust model.ReturnUrl since GetAuthorizationContextAsync returned non-null
-                if (context.IsNativeClient())
+                await _events.RaiseAsync(new UserLoginSuccessEvent(user.UserName, user.Id, user.UserName));
+                
+                if (_interaction.IsValidReturnUrl(Input.ReturnUrl) || Url.IsLocalUrl(Input.ReturnUrl))
                 {
-                    // The client is native, so this change in how to
-                    // return the response is for better UX for the end user.
-                    return this.LoadingPage(Input.ReturnUrl);
+                    return Redirect(Input.ReturnUrl);
                 }
-
-                return Redirect(Input.ReturnUrl);
+                
+                return Redirect("~/");
             }
-
-            // since we don't have a valid context, then we just go back to the home page
+            
+            // Generate the email confirmation link
+            var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var callbackUrl = Url.Page(
+                "/Account/ConfirmEmail",
+                pageHandler: null,
+                values: new { userId = user.Id, code },
+                protocol: Request.Scheme) ?? "";
+            
+            /* Add your email sending logic here:
+            await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",            
+                $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");*/
             return Redirect("~/");
         }
 
-        if (ModelState.IsValid)
+        foreach (var error in result.Errors)
         {
-            var result = await _signInManager.PasswordSignInAsync(Input.Username, Input.Password, Input.RememberLogin, lockoutOnFailure: true);
-            if (result.Succeeded)
-            {
-                var user = await _userManager.FindByNameAsync(Input.Username);
-                await _events.RaiseAsync(new UserLoginSuccessEvent(user.UserName, user.Id, user.UserName, clientId: context?.Client.ClientId));
-
-                if (context != null)
-                {
-                    if (context.IsNativeClient())
-                    {
-                        // The client is native, so this change in how to
-                        // return the response is for better UX for the end user.
-                        return this.LoadingPage(Input.ReturnUrl);
-                    }
-
-                    // we can trust model.ReturnUrl since GetAuthorizationContextAsync returned non-null
-                    return Redirect(Input.ReturnUrl);
-                }
-
-                // request for a local page
-                if (Url.IsLocalUrl(Input.ReturnUrl))
-                {
-                    return Redirect(Input.ReturnUrl);
-                }
-
-                if (string.IsNullOrEmpty(Input.ReturnUrl))
-                {
-                    return Redirect("~/");
-                }
-
-                // user might have clicked on a malicious link - should be logged
-                throw new Exception("invalid return URL");
-            }
-
-            if (result.IsNotAllowed)
-            {
-                ModelState.AddModelError(string.Empty, "Login is not allowed. Try to verify your email address.");
-                await BuildModelAsync(Input.ReturnUrl);
-                return Page();
-            }
-            
-            if (result.IsLockedOut)
-            {
-                ModelState.AddModelError(string.Empty, "Account is locked out.");
-                await BuildModelAsync(Input.ReturnUrl);
-                return Page();
-            }
-
-            if (result.RequiresTwoFactor)
-            {
-                ModelState.AddModelError(string.Empty, "Account requires 2FA.");
-                await BuildModelAsync(Input.ReturnUrl);
-                return Page();
-            }
-
-            await _events.RaiseAsync(new UserLoginFailureEvent(Input.Username, "invalid credentials", clientId:context?.Client.ClientId));
-            ModelState.AddModelError(string.Empty, LoginOptions.InvalidCredentialsErrorMessage);
+            ModelState.AddModelError(string.Empty, error.Description);
         }
-
-        // something went wrong, show form with error
+        
         await BuildModelAsync(Input.ReturnUrl);
         return Page();
     }
@@ -170,7 +126,7 @@ public class Index : PageModel
             // this is meant to short circuit the UI and only trigger the one external IdP
             View = new ViewModel
             {
-                EnableLocalLogin = local,
+                EnableLocalAccount = local,
             };
 
             Input.Username = context?.LoginHint;
@@ -220,8 +176,7 @@ public class Index : PageModel
 
         View = new ViewModel
         {
-            AllowRememberLogin = LoginOptions.AllowRememberLogin,
-            EnableLocalLogin = allowLocal && LoginOptions.AllowLocalLogin,
+            EnableLocalAccount = allowLocal && RegisterOptions.AllowLocalAccount,
             ExternalProviders = providers.ToArray()
         };
     }

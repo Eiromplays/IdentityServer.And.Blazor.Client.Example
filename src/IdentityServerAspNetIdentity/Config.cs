@@ -11,20 +11,20 @@ public static class Config
         {
             new IdentityResources.OpenId(),
             new IdentityResources.Profile(),
-            new IdentityResource("color", new [] { "favorite_color" })
+            new("color", new [] { "favorite_color" })
         };
 
     public static IEnumerable<ApiScope> ApiScopes =>
         new ApiScope[]
         {
-            new ApiScope("api", "My API"),
+            new("api", "My API"),
         };
 
     public static IEnumerable<Client> Clients =>
         new Client[]
         {
             // interactive ASP.NET Core Web App
-            new Client
+            new()
             {
                 ClientId = "blazor-client",
                 ClientSecrets = { new Secret("secret".Sha256()) },
@@ -32,10 +32,10 @@ public static class Config
                 AllowedGrantTypes = GrantTypes.CodeAndClientCredentials,
                     
                 // where to redirect to after login
-                RedirectUris = { "https://localhost:7189/signin-oidc" },
+                RedirectUris = { "https://localhost:6001/signin-oidc" },
 
                 // where to redirect to after logout
-                PostLogoutRedirectUris = { "https://localhost:7189/signout-callback-oidc" },
+                PostLogoutRedirectUris = { "https://localhost:6001/signout-callback-oidc" },
                 
                 AllowOfflineAccess = true,
                 

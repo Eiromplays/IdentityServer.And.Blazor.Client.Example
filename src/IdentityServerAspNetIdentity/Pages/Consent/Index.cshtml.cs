@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Duende.IdentityServer.Events;
 using Duende.IdentityServer.Extensions;
 using Duende.IdentityServer.Models;
@@ -11,12 +7,11 @@ using IdentityModel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.Logging;
 
-namespace IdentityServerHost.Pages.Consent;
+namespace IdentityServerAspNetIdentity.Pages.Consent;
 
 [Authorize]
-[SecurityHeadersAttribute]
+[SecurityHeaders]
 public class Index : PageModel
 {
     private readonly IIdentityServerInteractionService _interaction;

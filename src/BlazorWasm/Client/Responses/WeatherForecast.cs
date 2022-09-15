@@ -1,4 +1,4 @@
-namespace BlazorWasm.Shared;
+namespace BlazorWasm.Client.Responses;
 
 public class WeatherForecast
 {
