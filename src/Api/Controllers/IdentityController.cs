@@ -1,13 +1,14 @@
-using Microsoft.AspNetCore.Authorization;
+using Duende.Bff;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers;
 
-[Route("ap/identity")]
-[Authorize]
+[ApiController]
+[Route("[controller]")]
+[BffApi]
 public class IdentityController : ControllerBase
 {
-    [HttpGet]
+    [HttpGet("me")]
     public IActionResult Get()
     {
         var response = new JsonResult(from c in User.Claims select new { c.Type, c.Value });

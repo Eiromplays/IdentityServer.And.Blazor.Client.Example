@@ -40,6 +40,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        _userClaims = await Http.GetFromJsonAsync<List<IdentityResponse>>("/api/identity");
+        _userClaims = await Http.GetFromJsonAsync<List<IdentityResponse>>("Identity/me");
     }
 }

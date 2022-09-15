@@ -1,8 +1,8 @@
-using Duende.Bff.Yarp;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+
+builder.Services.AddAuthorization();
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddEndpointsApiExplorer();
@@ -10,8 +10,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddRazorPages();
 
-builder.Services.AddBff()
-    .AddRemoteApis();
+builder.Services.AddBff();
 
 builder.Services.AddAuthentication(options =>
     {
@@ -49,6 +48,8 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    app.UseSwagger();
+    app.UseSwaggerUI();
     app.UseWebAssemblyDebugging();
 }
 else
@@ -70,6 +71,7 @@ app.UseBff();
 app.UseAuthorization();
 
 app.MapBffManagementEndpoints();
+
 
 app.MapRazorPages();
 
