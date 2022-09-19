@@ -25,7 +25,7 @@ builder.Services.AddAuthentication(options =>
     })
     .AddOpenIdConnect("oidc", options =>
     {
-        options.Authority = "https://localhost:5001";
+        options.Authority = "https://localhost:5443";
 
         options.ClientId = "blazor-client";
         options.ClientSecret = "secret";
